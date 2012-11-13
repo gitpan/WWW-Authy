@@ -3,7 +3,7 @@ BEGIN {
   $WWW::Authy::AUTHORITY = 'cpan:GETTY';
 }
 {
-  $WWW::Authy::VERSION = '0.001';
+  $WWW::Authy::VERSION = '0.002';
 }
 # ABSTRACT: Easy access to the already so easy Authy API
 
@@ -160,6 +160,26 @@ sub verify {
 	}
 }
 
+sub sms_request {
+	my ( $self, $id ) = @_;
+	my $uri = $self->make_url('sms',$id);
+	return GET($uri->as_string);
+}
+
+
+sub sms {
+	my $self = shift;
+	$self->clear_errors;
+	my $response = $self->useragent->request($self->sms_request(@_));
+	if ($response->is_success) {
+		return 1;
+	} else {
+		my $data = $self->json->decode($response->content);
+		$self->errors($data->{errors});
+		return 0;
+	}
+}
+
 1;
 
 
@@ -172,7 +192,7 @@ WWW::Authy - Easy access to the already so easy Authy API
 
 =head1 VERSION
 
-version 0.001
+version 0.002
 
 =head1 SYNOPSIS
 
@@ -182,6 +202,8 @@ version 0.001
   my $id = $authy->new_user('email@universe.org','555-123-2345','1');
 
   $authy->verify($id,$token) or print (Dumper $authy->errors);
+
+  $authy->sms($id); # send sms for token
 
 =head1 DESCRIPTION
 
@@ -238,6 +260,11 @@ entry it just gives back the existing user id.
 Verifies the first parameter as user id against the second parameter the token.
 It gives back a true or a false value, it still could be another error then an
 invalid token, so far this module doesnt differ.
+
+=head2 sms
+
+Send a SMS to the given user id. Please be aware that this may produce cost.
+See the pricing on L<http://www.authy.com/pricing/> for more informations.
 
 =head1 SUPPORT
 
